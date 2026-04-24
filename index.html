@@ -138,6 +138,21 @@
   ::-webkit-scrollbar{width:3px}
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+  /* MONTH GROUPS */
+  .month-group{display:flex;flex-direction:column;gap:8px}
+  .month-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--deeper);border-radius:10px;border:1px solid var(--border2);margin-bottom:2px}
+  .month-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:var(--gold)}
+  .month-summary{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .month-days-count{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .month-total{font-size:14px;font-weight:700}
+  .month-total.pos{color:var(--green)}.month-total.neg{color:var(--red-light)}.month-total.zero{color:var(--hint)}
+  .month-separator{height:1px;background:var(--border);margin:6px 0 10px}
+
+  /* DELETE DAY BUTTON */
+  .btn-del-day{background:none;border:none;color:var(--hint);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;transition:all .2s;margin-left:8px}
+  .btn-del-day:hover{color:var(--red-light);background:rgba(231,76,60,0.1)}
+  .hist-day-actions{display:flex;align-items:center;gap:4px}
 </style>
 </head>
 <body>
@@ -206,6 +221,18 @@
       <div class="sec-title">Dias Fechados</div>
       <div class="hist-list" id="hist-list"></div>
       <button class="btn-export" onclick="exportCSV()">Exportar CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR DIA -->
+<div class="modal-bg" id="modal-del-bg">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--red-light)">Excluir Dia</div>
+    <div class="modal-sub" id="modal-del-sub">Tens a certeza?</div>
+    <div class="modal-btns">
+      <button class="btn-confirm" style="background:#8B0000" onclick="confirmDeleteDay()">Sim, excluir</button>
+      <button class="btn-cancel" onclick="closeDelModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -372,32 +399,101 @@ function renderChart(){
   }).join('');
 }
 
+function getMonthKey(dateStr){
+  // dateStr format: DD/MM/YYYY
+  const parts=dateStr.split('/');
+  if(parts.length<3) return dateStr;
+  return parts[2]+'-'+parts[1]; // YYYY-MM for sorting
+}
+
+function getMonthLabel(monthKey){
+  const [year,month]=monthKey.split('-');
+  const months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return months[parseInt(month)-1]+' '+year;
+}
+
+let _pendingDeleteDate=null;
+
+function deleteHistoryDay(dateStr){
+  _pendingDeleteDate=dateStr;
+  document.getElementById('modal-del-sub').textContent='Excluir o dia '+dateStr+' do histórico?';
+  document.getElementById('modal-del-bg').classList.add('open');
+}
+
+function closeDelModal(){
+  _pendingDeleteDate=null;
+  document.getElementById('modal-del-bg').classList.remove('open');
+}
+
+function confirmDeleteDay(){
+  if(!_pendingDeleteDate){closeDelModal();return;}
+  data.history=data.history.filter(h=>h.date!==_pendingDeleteDate);
+  save(data);
+  closeDelModal();
+  renderAll();
+  renderHistory();
+  showToast('Dia removido do histórico!');
+}
+
 function renderHistory(){
   const el=document.getElementById('hist-list');
   if(!data.history.length){
     el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-txt">Nenhum dia fechado ainda.</div></div>';
     return;
   }
-  el.innerHTML=data.history.slice().reverse().map((d,i)=>{
-    const id='hist-'+i;
-    const cls=d.profit>0?'pos':d.profit<0?'neg':'';
-    const sign=d.profit>=0?'+':'';
-    return `<div class="hist-day">
-      <div class="hist-day-header">
-        <div class="hist-day-date">${d.date}</div>
-        <div class="hist-day-profit ${cls}">${sign}${fmt(d.profit).replace('€',d.profit<0?'-€':'€')}</div>
+
+  // Agrupar por mês
+  const byMonth={};
+  data.history.forEach(d=>{
+    const mk=getMonthKey(d.date);
+    if(!byMonth[mk]) byMonth[mk]=[];
+    byMonth[mk].push(d);
+  });
+
+  // Ordenar meses do mais recente ao mais antigo
+  const sortedMonths=Object.keys(byMonth).sort((a,b)=>b.localeCompare(a));
+
+  el.innerHTML=sortedMonths.map(mk=>{
+    const days=byMonth[mk].slice().sort((a,b)=>b.date.localeCompare(a.date));
+    const monthProfit=days.reduce((a,d)=>a+d.profit,0);
+    const monthCls=monthProfit>0?'pos':monthProfit<0?'neg':'zero';
+    const monthSign=monthProfit>=0?'+':'';
+
+    const daysHtml=days.map((d,i)=>{
+      const uid='hist-'+mk.replace('-','')+'-'+i;
+      const cls=d.profit>0?'pos':d.profit<0?'neg':'';
+      const sign=d.profit>=0?'+':'';
+      return `<div class="hist-day">
+        <div class="hist-day-header">
+          <div class="hist-day-date">${d.date}</div>
+          <div class="hist-day-actions">
+            <div class="hist-day-profit ${cls}">${sign}${fmt(d.profit).replace('€',d.profit<0?'-€':'€')}</div>
+            <button class="btn-del-day" onclick="deleteHistoryDay('${d.date}')" title="Excluir este dia">🗑</button>
+          </div>
+        </div>
+        <div class="hist-day-meta">
+          <span>${d.cycles.length} ciclos</span>
+          <span>Dep: ${fmt(d.totalDep)}</span>
+          <span>Sac: ${fmt(d.totalSac)}</span>
+        </div>
+        <div class="hist-day-cycles" id="${uid}">
+          ${d.cycles.map((c,ci)=>`<div class="hist-cy-row"><span>Ciclo ${ci+1}</span><span style="color:${c.profit>=0?'#2ECC71':'#E74C3C'}">${c.profit>=0?'+':''}${fmt(c.profit).replace('€',c.profit<0?'-€':'€')}</span></div>`).join('')}
+        </div>
+        <button class="toggle-btn" onclick="toggleHist('${uid}',this)">ver ciclos ▾</button>
+      </div>`;
+    }).join('');
+
+    return `<div class="month-group">
+      <div class="month-header">
+        <div class="month-title">${getMonthLabel(mk)}</div>
+        <div class="month-summary">
+          <div class="month-days-count">${days.length} dia${days.length!==1?'s':''} fechado${days.length!==1?'s':''}</div>
+          <div class="month-total ${monthCls}">${monthSign}${fmt(monthProfit).replace('€',monthProfit<0?'-€':'€')}</div>
+        </div>
       </div>
-      <div class="hist-day-meta">
-        <span>${d.cycles.length} ciclos</span>
-        <span>Dep: ${fmt(d.totalDep)}</span>
-        <span>Sac: ${fmt(d.totalSac)}</span>
-      </div>
-      <div class="hist-day-cycles" id="${id}">
-        ${d.cycles.map((c,ci)=>`<div class="hist-cy-row"><span>Ciclo ${ci+1}</span><span style="color:${c.profit>=0?'#2ECC71':'#E74C3C'}">${c.profit>=0?'+':''}${fmt(c.profit).replace('€',c.profit<0?'-€':'€')}</span></div>`).join('')}
-      </div>
-      <button class="toggle-btn" onclick="toggleHist('${id}',this)">ver ciclos ▾</button>
+      ${daysHtml}
     </div>`;
-  }).join('');
+  }).join('<div class="month-separator"></div>');
 }
 
 function toggleHist(id,btn){
@@ -472,6 +568,10 @@ function showToast(msg){
   t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2200);
 }
+
+document.getElementById('modal-del-bg').addEventListener('click',function(e){
+  if(e.target===this) closeDelModal();
+});
 
 document.getElementById('modal-bg').addEventListener('click',function(e){
   if(e.target===this) closeModal();
