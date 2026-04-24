@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tigas CPA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bebas+Neue&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --red:#C0392B;--dark-red:#8B0000;--deeper:#5a0000;
+    --bg:#0f0f0f;--surface:#1a1a1a;--card:#222;--card2:#2a2a2a;
+    --border:#333;--border2:#3d3d3d;
+    --text:#f0f0f0;--muted:#888;--hint:#555;
+    --gold:#F39C12;--green:#2ECC71;--red-light:#E74C3C;--blue:#5DADE2;
+  }
+  html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif}
+  .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+  /* HEADER */
+  .header{background:var(--dark-red);padding:20px 20px 0}
+  .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:#fff}
+  .logo span{color:var(--gold)}
+  .date-pill{background:rgba(0,0,0,0.4);color:rgba(255,255,255,0.8);font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:.5px}
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0}
+  .stat{background:rgba(0,0,0,0.35);border-radius:10px 10px 0 0;padding:10px 12px}
+  .stat-lbl{font-size:9px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+  .stat-val{font-size:17px;font-weight:700;color:#fff}
+  .stat-val.pos{color:#2ECC71}.stat-val.neg{color:#E74C3C}
+
+  /* TABS */
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border)}
+  .tab{flex:1;padding:13px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--hint);cursor:pointer;letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid transparent;transition:all .2s}
+  .tab.active{color:var(--red);border-bottom-color:var(--red);background:#1e1e1e}
+
+  /* CONTENT */
+  .content{flex:1;background:var(--bg)}
+  .pane{display:none;padding:20px;flex-direction:column;gap:14px}
+  .pane.active{display:flex}
+
+  /* CARDS */
+  .card{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border)}
+  .sec-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+
+  /* PREVIEW BAND */
+  .preview-band{background:var(--card2);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border2)}
+  .preview-lbl{font-size:11px;color:var(--muted)}
+  .preview-val{font-size:24px;font-weight:800}
+  .preview-val.pos{color:var(--green)}.preview-val.neg{color:var(--red-light)}.preview-val.zero{color:var(--hint)}
+
+  /* INPUTS */
+  .input-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .igroup{display:flex;flex-direction:column;gap:6px}
+  .igroup label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .igroup input{background:#1a1a1a;border:1px solid var(--border2);border-radius:8px;padding:11px 12px;color:var(--blue);font-size:15px;font-weight:600;font-family:'Inter',sans-serif;width:100%;outline:none;transition:border-color .2s}
+  .igroup input:focus{border-color:var(--red)}
+  .igroup input.err{border-color:#E74C3C;animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+  /* BUTTONS */
+  .btn-main{width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:14px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:background .2s;font-family:'Inter',sans-serif}
+  .btn-main:hover{background:#a93226}
+  .btn-close-day{width:100%;background:transparent;color:var(--gold);border:1px solid var(--gold);border-radius:10px;padding:13px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;font-family:'Inter',sans-serif}
+  .btn-close-day:hover{background:var(--gold);color:#111}
+  .btn-export{width:100%;background:transparent;color:var(--blue);border:1px solid var(--blue);border-radius:10px;padding:11px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;font-family:'Inter',sans-serif}
+  .btn-export:hover{background:var(--blue);color:#111}
+
+  /* CYCLES LIST */
+  .cycles-list{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto}
+  .cycle-item{background:var(--card2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;border:1px solid var(--border2)}
+  .cycle-num{background:var(--deeper);color:var(--gold);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;min-width:54px;text-align:center;letter-spacing:.5px}
+  .cycle-info{flex:1}
+  .cycle-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:2px}
+  .cycle-profit{font-size:14px;font-weight:700;margin-top:4px}
+  .cycle-profit.pos{color:var(--green)}.cycle-profit.neg{color:var(--red-light)}
+  .cycle-date{font-size:10px;color:var(--hint);margin-top:2px}
+  .btn-del{background:none;border:none;color:var(--hint);cursor:pointer;font-size:18px;line-height:1;padding:4px;transition:color .2s}
+  .btn-del:hover{color:var(--red-light)}
+  .empty{text-align:center;padding:36px 20px;color:var(--hint)}
+  .empty-icon{font-size:32px;margin-bottom:10px;opacity:.5}
+  .empty-txt{font-size:12px;line-height:1.6}
+
+  /* CHART */
+  .chart-wrap{background:var(--card2);border-radius:10px;padding:14px;border:1px solid var(--border2)}
+  .chart-bars{display:flex;align-items:flex-end;gap:5px;height:100px}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+  .bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s}
+  .bar.pos{background:var(--green)}.bar.neg{background:var(--red-light)}
+  .bar-lbl{font-size:8px;color:var(--hint)}
+  .axis-line{border-top:1px solid var(--border);margin-top:4px}
+
+  /* SUMMARY GRID */
+  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sum-card{background:var(--card2);border-radius:10px;padding:14px;border:1px solid var(--border2)}
+  .sum-lbl{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .sum-val{font-size:18px;font-weight:700;color:var(--gold)}
+  .sum-val.pos{color:var(--green)}.sum-val.neg{color:var(--red-light)}.sum-val.blue{color:var(--blue)}
+  .badge{font-size:9px;padding:2px 7px;border-radius:8px;display:inline-block;margin-top:4px;font-weight:600}
+  .badge.pos{background:#1a3a1a;color:var(--green)}.badge.neg{background:#3a1a1a;color:var(--red-light)}
+
+  /* HISTORY */
+  .hist-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto}
+  .hist-day{background:var(--card2);border-radius:10px;padding:14px;border:1px solid var(--border2)}
+  .hist-day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .hist-day-date{font-size:12px;font-weight:700;color:var(--gold)}
+  .hist-day-profit{font-size:14px;font-weight:700}
+  .hist-day-profit.pos{color:var(--green)}.hist-day-profit.neg{color:var(--red-light)}
+  .hist-day-meta{font-size:10px;color:var(--muted);display:flex;gap:12px}
+  .hist-day-cycles{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;display:none;flex-direction:column;gap:4px}
+  .hist-day-cycles.open{display:flex}
+  .hist-cy-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
+  .hist-cy-row span:first-child{color:var(--muted)}
+  .toggle-btn{background:none;border:none;color:var(--hint);cursor:pointer;font-size:11px;font-weight:600;padding:0;letter-spacing:.5px}
+  .toggle-btn:hover{color:var(--text)}
+
+  /* MODAL */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:360px;border:1px solid var(--border2)}
+  .modal-title{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);margin-bottom:4px;letter-spacing:1px}
+  .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+  .modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .modal-stat{background:var(--card2);border-radius:8px;padding:12px}
+  .modal-stat-lbl{font-size:9px;color:var(--hint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .modal-stat-val{font-size:16px;font-weight:700}
+  .modal-stat-val.pos{color:var(--green)}.modal-stat-val.neg{color:var(--red-light)}.modal-stat-val.blue{color:var(--blue)}
+  .modal-btns{display:flex;flex-direction:column;gap:8px}
+  .btn-confirm{width:100%;background:var(--dark-red);color:#fff;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.5px}
+  .btn-confirm:hover{background:var(--red)}
+  .btn-cancel{width:100%;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:10px;padding:12px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif}
+  .btn-cancel:hover{color:var(--text)}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid #444;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap}
+  .toast.show{opacity:1}
+
+  ::-webkit-scrollbar{width:3px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">TIGAS <span>CPA</span></div>
+      <div class="date-pill" id="today-label"></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-lbl">Ciclos Hoje</div><div class="stat-val" id="h-cycles">0</div></div>
+      <div class="stat"><div class="stat-lbl">Lucro Hoje</div><div class="stat-val" id="h-profit">€0,00</div></div>
+      <div class="stat"><div class="stat-lbl">Total Dias</div><div class="stat-val" id="h-days">0</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="tab('registar')">Registar</div>
+    <div class="tab" onclick="tab('ciclos')">Ciclos</div>
+    <div class="tab" onclick="tab('resumo')">Resumo</div>
+    <div class="tab" onclick="tab('historico')">Histórico</div>
+  </div>
+
+  <div class="content">
+    <!-- REGISTAR -->
+    <div class="pane active" id="pane-registar">
+      <div class="preview-band">
+        <div><div class="preview-lbl">Resultado previsto</div></div>
+        <div class="preview-val zero" id="preview">€ —</div>
+      </div>
+      <div class="input-grid">
+        <div class="igroup"><label>Total Depositado</label><input type="number" id="dep" placeholder="0.00" step="0.01" min="0" oninput="calcPreview()"></div>
+        <div class="igroup"><label>Total Sacado</label><input type="number" id="sac" placeholder="0.00" step="0.01" min="0" oninput="calcPreview()"></div>
+      </div>
+      <button class="btn-main" onclick="addCycle()">+ Registar Ciclo</button>
+      <button class="btn-close-day" onclick="openCloseDay()">Fechar Dia e Salvar</button>
+    </div>
+
+    <!-- CICLOS -->
+    <div class="pane" id="pane-ciclos">
+      <div class="sec-title">Ciclos de Hoje</div>
+      <div class="cycles-list" id="cycles-list"></div>
+    </div>
+
+    <!-- RESUMO -->
+    <div class="pane" id="pane-resumo">
+      <div class="sec-title">Desempenho dos Ciclos</div>
+      <div class="chart-wrap">
+        <div class="chart-bars" id="chart-bars"></div>
+        <div class="axis-line"></div>
+      </div>
+      <div class="sec-title">Estatísticas de Hoje</div>
+      <div class="sum-grid">
+        <div class="sum-card"><div class="sum-lbl">Depositado</div><div class="sum-val blue" id="s-dep">€0,00</div></div>
+        <div class="sum-card"><div class="sum-lbl">Sacado</div><div class="sum-val blue" id="s-sac">€0,00</div></div>
+        <div class="sum-card"><div class="sum-lbl">Lucro Total</div><div class="sum-val" id="s-profit">€0,00</div></div>
+        <div class="sum-card"><div class="sum-lbl">Média/Ciclo</div><div class="sum-val" id="s-avg">€0,00</div></div>
+        <div class="sum-card"><div class="sum-lbl">Melhor Ciclo</div><div class="sum-val pos" id="s-best">€0,00</div><div class="badge pos" id="s-best-n">—</div></div>
+        <div class="sum-card"><div class="sum-lbl">Pior Ciclo</div><div class="sum-val neg" id="s-worst">€0,00</div><div class="badge neg" id="s-worst-n">—</div></div>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="pane" id="pane-historico">
+      <div class="sec-title">Dias Fechados</div>
+      <div class="hist-list" id="hist-list"></div>
+      <button class="btn-export" onclick="exportCSV()">Exportar CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FECHAR DIA -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-title">Fechar o Dia</div>
+    <div class="modal-sub" id="modal-date-sub"></div>
+    <div class="modal-stats">
+      <div class="modal-stat"><div class="modal-stat-lbl">Ciclos</div><div class="modal-stat-val blue" id="m-cycles">0</div></div>
+      <div class="modal-stat"><div class="modal-stat-lbl">Depositado</div><div class="modal-stat-val blue" id="m-dep">€0,00</div></div>
+      <div class="modal-stat"><div class="modal-stat-lbl">Sacado</div><div class="modal-stat-val blue" id="m-sac">€0,00</div></div>
+      <div class="modal-stat"><div class="modal-stat-lbl">Resultado</div><div class="modal-stat-val" id="m-profit">€0,00</div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-confirm" onclick="confirmCloseDay()">Confirmar e Salvar</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY = 'tigascpa_v1';
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {cycles:[],history:[]}; }
+  catch(e){ return {cycles:[],history:[]}; }
+}
+function save(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+
+let data = load();
+
+function today(){ return new Date().toLocaleDateString('pt-PT'); }
+function fmt(v){ return '€'+Math.abs(v).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function fmtSigned(v){ return (v>=0?'+':'-')+fmt(v); }
+
+document.getElementById('today-label').textContent = today();
+
+function tab(id){
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['registar','ciclos','resumo','historico'][i]===id);
+  });
+  document.querySelectorAll('.pane').forEach(el=>{
+    el.classList.toggle('active',el.id==='pane-'+id);
+  });
+  if(id==='resumo') renderChart();
+  if(id==='historico') renderHistory();
+}
+
+function calcPreview(){
+  const d=parseFloat(document.getElementById('dep').value)||0;
+  const s=parseFloat(document.getElementById('sac').value)||0;
+  const p=document.getElementById('preview');
+  if(!d&&!s){p.textContent='€ —';p.className='preview-val zero';return;}
+  const r=s-d;
+  p.textContent=(r>=0?'+':'')+fmt(r).replace('€',r<0?'-€':'€');
+  p.className='preview-val '+(r>0?'pos':r<0?'neg':'zero');
+}
+
+function addCycle(){
+  const d=parseFloat(document.getElementById('dep').value);
+  const s=parseFloat(document.getElementById('sac').value);
+  const di=document.getElementById('dep');
+  const si=document.getElementById('sac');
+  if(isNaN(d)||isNaN(s)||d<0||s<0){
+    di.classList.add('err');si.classList.add('err');
+    setTimeout(()=>{di.classList.remove('err');si.classList.remove('err');},600);
+    return;
+  }
+  data.cycles.push({dep:d,sac:s,profit:+(s-d).toFixed(2),date:today(),id:Date.now()});
+  save(data);
+  di.value='';si.value='';
+  calcPreview();
+  renderAll();
+  showToast('Ciclo registado!');
+}
+
+function deleteCycle(id){
+  data.cycles=data.cycles.filter(c=>c.id!==id);
+  save(data);
+  renderAll();
+  showToast('Ciclo removido');
+}
+
+function renderAll(){ renderHeader(); renderCycles(); renderStats(); }
+
+function renderHeader(){
+  const tod=data.cycles.filter(c=>c.date===today());
+  const tp=tod.reduce((a,c)=>a+c.profit,0);
+  document.getElementById('h-cycles').textContent=tod.length;
+  const hpEl=document.getElementById('h-profit');
+  hpEl.textContent=(tp>=0?'+':'')+fmt(tp).replace('€',tp<0?'-€':'€');
+  hpEl.className='stat-val '+(tp>0?'pos':tp<0?'neg':'');
+  document.getElementById('h-days').textContent=data.history.length;
+}
+
+function renderCycles(){
+  const el=document.getElementById('cycles-list');
+  const tod=data.cycles.filter(c=>c.date===today());
+  if(!tod.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">Nenhum ciclo hoje ainda.<br>Vai a Registar para começar.</div></div>';
+    return;
+  }
+  el.innerHTML=tod.slice().reverse().map((c,ri)=>{
+    const n=tod.length-ri;
+    const cls=c.profit>0?'pos':c.profit<0?'neg':'';
+    const sign=c.profit>=0?'+':'';
+    return `<div class="cycle-item">
+      <div class="cycle-num">Ciclo ${n}</div>
+      <div class="cycle-info">
+        <div class="cycle-row"><span>Depositado</span><span>${fmt(c.dep)}</span></div>
+        <div class="cycle-row"><span>Sacado</span><span>${fmt(c.sac)}</span></div>
+        <div class="cycle-profit ${cls}">${sign}${fmt(c.profit).replace('€',c.profit<0?'-€':'€')}</div>
+        <div class="cycle-date">${c.date}</div>
+      </div>
+      <button class="btn-del" onclick="deleteCycle(${c.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function renderStats(){
+  const tod=data.cycles.filter(c=>c.date===today());
+  if(!tod.length){
+    ['s-dep','s-sac','s-profit','s-avg','s-best','s-worst'].forEach(id=>document.getElementById(id).textContent='€0,00');
+    document.getElementById('s-best-n').textContent='—';
+    document.getElementById('s-worst-n').textContent='—';
+    document.getElementById('s-profit').className='sum-val';
+    return;
+  }
+  const tDep=tod.reduce((a,c)=>a+c.dep,0);
+  const tSac=tod.reduce((a,c)=>a+c.sac,0);
+  const tP=tod.reduce((a,c)=>a+c.profit,0);
+  const avg=tP/tod.length;
+  const best=tod.reduce((a,c)=>c.profit>a.profit?c:a,tod[0]);
+  const worst=tod.reduce((a,c)=>c.profit<a.profit?c:a,tod[0]);
+  document.getElementById('s-dep').textContent=fmt(tDep);
+  document.getElementById('s-sac').textContent=fmt(tSac);
+  const spEl=document.getElementById('s-profit');
+  spEl.textContent=(tP>=0?'+':'')+fmt(tP).replace('€',tP<0?'-€':'€');
+  spEl.className='sum-val '+(tP>0?'pos':tP<0?'neg':'');
+  document.getElementById('s-avg').textContent=(avg>=0?'+':'')+fmt(avg).replace('€',avg<0?'-€':'€');
+  document.getElementById('s-best').textContent='+'+fmt(best.profit);
+  document.getElementById('s-worst').textContent=fmt(worst.profit).replace('€',worst.profit<0?'-€':'€');
+  document.getElementById('s-best-n').textContent='Ciclo '+(tod.indexOf(best)+1);
+  document.getElementById('s-worst-n').textContent='Ciclo '+(tod.indexOf(worst)+1);
+}
+
+function renderChart(){
+  const el=document.getElementById('chart-bars');
+  const tod=data.cycles.filter(c=>c.date===today());
+  if(!tod.length){
+    el.innerHTML='<div class="empty" style="flex:1;padding:10px 0"><div class="empty-txt">Sem dados para mostrar</div></div>';
+    return;
+  }
+  const show=tod.slice(-14);
+  const maxA=Math.max(...show.map(c=>Math.abs(c.profit)),0.01);
+  el.innerHTML=show.map((c,i)=>{
+    const pct=Math.round((Math.abs(c.profit)/maxA)*95)+5;
+    const cls=c.profit>=0?'pos':'neg';
+    return `<div class="bar-col"><div class="bar ${cls}" style="height:${pct}%"></div><div class="bar-lbl">C${i+1}</div></div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const el=document.getElementById('hist-list');
+  if(!data.history.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-txt">Nenhum dia fechado ainda.</div></div>';
+    return;
+  }
+  el.innerHTML=data.history.slice().reverse().map((d,i)=>{
+    const id='hist-'+i;
+    const cls=d.profit>0?'pos':d.profit<0?'neg':'';
+    const sign=d.profit>=0?'+':'';
+    return `<div class="hist-day">
+      <div class="hist-day-header">
+        <div class="hist-day-date">${d.date}</div>
+        <div class="hist-day-profit ${cls}">${sign}${fmt(d.profit).replace('€',d.profit<0?'-€':'€')}</div>
+      </div>
+      <div class="hist-day-meta">
+        <span>${d.cycles.length} ciclos</span>
+        <span>Dep: ${fmt(d.totalDep)}</span>
+        <span>Sac: ${fmt(d.totalSac)}</span>
+      </div>
+      <div class="hist-day-cycles" id="${id}">
+        ${d.cycles.map((c,ci)=>`<div class="hist-cy-row"><span>Ciclo ${ci+1}</span><span style="color:${c.profit>=0?'#2ECC71':'#E74C3C'}">${c.profit>=0?'+':''}${fmt(c.profit).replace('€',c.profit<0?'-€':'€')}</span></div>`).join('')}
+      </div>
+      <button class="toggle-btn" onclick="toggleHist('${id}',this)">ver ciclos ▾</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleHist(id,btn){
+  const el=document.getElementById(id);
+  el.classList.toggle('open');
+  btn.textContent=el.classList.contains('open')?'ocultar ▴':'ver ciclos ▾';
+}
+
+function openCloseDay(){
+  const tod=data.cycles.filter(c=>c.date===today());
+  if(!tod.length){showToast('Sem ciclos hoje para fechar!');return;}
+  const tDep=tod.reduce((a,c)=>a+c.dep,0);
+  const tSac=tod.reduce((a,c)=>a+c.sac,0);
+  const tP=tod.reduce((a,c)=>a+c.profit,0);
+  document.getElementById('modal-date-sub').textContent=today()+' — Resumo do dia';
+  document.getElementById('m-cycles').textContent=tod.length;
+  document.getElementById('m-dep').textContent=fmt(tDep);
+  document.getElementById('m-sac').textContent=fmt(tSac);
+  const mp=document.getElementById('m-profit');
+  mp.textContent=(tP>=0?'+':'')+fmt(tP).replace('€',tP<0?'-€':'€');
+  mp.className='modal-stat-val '+(tP>0?'pos':tP<0?'neg':'blue');
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal-bg').classList.remove('open'); }
+
+function confirmCloseDay(){
+  const tod=data.cycles.filter(c=>c.date===today());
+  if(!tod.length){closeModal();return;}
+  const tDep=tod.reduce((a,c)=>a+c.dep,0);
+  const tSac=tod.reduce((a,c)=>a+c.sac,0);
+  const tP=tod.reduce((a,c)=>a+c.profit,0);
+  const entry={
+    date:today(),
+    cycles:tod,
+    totalDep:+tDep.toFixed(2),
+    totalSac:+tSac.toFixed(2),
+    profit:+tP.toFixed(2),
+    closedAt:new Date().toISOString()
+  };
+  const existing=data.history.findIndex(h=>h.date===today());
+  if(existing>=0) data.history[existing]=entry;
+  else data.history.push(entry);
+  data.cycles=data.cycles.filter(c=>c.date!==today());
+  save(data);
+  closeModal();
+  renderAll();
+  showToast('Dia fechado e guardado!');
+}
+
+function exportCSV(){
+  if(!data.history.length){showToast('Sem histórico para exportar.');return;}
+  let csv='Data,Ciclo,Depositado,Sacado,Lucro/Prejuizo\n';
+  data.history.forEach(d=>{
+    d.cycles.forEach((c,i)=>{
+      csv+=`${d.date},Ciclo ${i+1},${c.dep.toFixed(2)},${c.sac.toFixed(2)},${c.profit.toFixed(2)}\n`;
+    });
+    csv+=`${d.date},TOTAL DIA,,${d.totalSac.toFixed(2)},${d.profit.toFixed(2)}\n`;
+    csv+='\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='TigasCPA_historico.csv';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('CSV exportado!');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+document.getElementById('modal-bg').addEventListener('click',function(e){
+  if(e.target===this) closeModal();
+});
+
+renderAll();
+</script>
+</body>
+</html>
