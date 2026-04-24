@@ -1,0 +1,22 @@
+{
+  "name": "Tigas CPA",
+  "short_name": "TigasCPA",
+  "description": "Gestor de ciclos CPA",
+  "start_url": "/TigasCPA/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#8B0000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/8B0000/ffffff?text=TC",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/8B0000/ffffff?text=TC",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
